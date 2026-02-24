@@ -1,4 +1,4 @@
-# Internship Project SBL
+# Ai-Web-Scrapper
 
 This repository is a Turborepo monorepo that implements a small AI-assisted web app:
 
@@ -22,8 +22,8 @@ Prerequisites:
 1. Clone the repo and enter it:
 
 ```bash
-git clone <repo-url>
-cd internship-project-sbl
+git clone (https://github.com/Adam2053/ai-web-scrapper.git)
+cd ai-web-scrapper
 ```
 
 2. Create a `.env` file at the repository root with at least the following values (adjust as needed):
