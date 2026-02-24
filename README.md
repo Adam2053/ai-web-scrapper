@@ -22,7 +22,7 @@ Prerequisites:
 1. Clone the repo and enter it:
 
 ```bash
-git clone (https://github.com/Adam2053/ai-web-scrapper.git)
+git clone https://github.com/Adam2053/ai-web-scrapper.git
 cd ai-web-scrapper
 ```
 
