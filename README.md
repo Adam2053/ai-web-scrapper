@@ -91,4 +91,3 @@ If you want, I can also:
 
 ---
 
-Updated README to describe project function and local setup.
