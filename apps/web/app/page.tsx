@@ -1,102 +1,141 @@
-import Image, { type ImageProps } from "next/image";
-import { Button } from "@repo/ui/button";
-import styles from "./page.module.css";
+"use client";
 
-type Props = Omit<ImageProps, "src"> & {
-  srcLight: string;
-  srcDark: string;
-};
+import { useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
-const ThemeImage = (props: Props) => {
-  const { srcLight, srcDark, ...rest } = props;
-
-  return (
-    <>
-      <Image {...rest} src={srcLight} className="imgLight" />
-      <Image {...rest} src={srcDark} className="imgDark" />
-    </>
-  );
-};
+const API_URL = "http://localhost:4000";
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <ThemeImage
-          className={styles.logo}
-          srcLight="turborepo-dark.svg"
-          srcDark="turborepo-light.svg"
-          alt="Turborepo logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>apps/web/app/page.tsx</code>
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [url, setUrl] = useState("");
+  const [question, setQuestion] = useState("");
+  const [taskId, setTaskId] = useState<string | null>(null);
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new/clone?demo-description=Learn+to+implement+a+monorepo+with+a+two+Next.js+sites+that+has+installed+three+local+packages.&demo-image=%2F%2Fimages.ctfassets.net%2Fe5382hct74si%2F4K8ZISWAzJ8X1504ca0zmC%2F0b21a1c6246add355e55816278ef54bc%2FBasic.png&demo-title=Monorepo+with+Turborepo&demo-url=https%3A%2F%2Fexamples-basic-web.vercel.sh%2F&from=templates&project-name=Monorepo+with+Turborepo&repository-name=monorepo-turborepo&repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fturborepo%2Ftree%2Fmain%2Fexamples%2Fbasic&root-directory=apps%2Fdocs&skippable-integrations=1&teamSlug=vercel&utm_source=create-turbo"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://turborepo.dev/docs?utm_source"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
+  const createTask = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`${API_URL}/tasks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url, question }),
+      });
+
+      if (!res.ok) throw new Error("Failed to create task");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setTaskId(data.taskId);
+    },
+  });
+
+  const { data } = useQuery({
+    queryKey: ["task", taskId],
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/tasks/${taskId}`);
+      if (!res.ok) throw new Error("Failed to fetch task");
+      return res.json();
+    },
+    enabled: !!taskId,
+    refetchInterval: (query) =>
+      query.state.data?.status === "completed" ||
+      query.state.data?.status === "failed"
+        ? false
+        : 2000,
+  });
+
+  return (
+    <div className="min-h-screen bg-[#0f172a] text-white flex flex-col">
+      
+      {/* Header */}
+      <header className="border-b border-gray-700 p-4 text-center text-lg font-semibold">
+        AI Website Analyzer
+      </header>
+
+      {/* Chat Area */}
+      <div className="flex-1 overflow-y-auto px-4 py-8 flex justify-center">
+        <div className="w-full max-w-3xl space-y-6">
+
+          {/* User Message */}
+          {question && (
+            <div className="flex justify-end">
+              <div className="bg-blue-600 px-4 py-3 rounded-2xl max-w-lg shadow-lg">
+                <p className="text-sm opacity-70 mb-1">You asked:</p>
+                <p>{question}</p>
+                <p className="text-xs mt-2 opacity-50 break-all">
+                  {url}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* AI Response */}
+          {taskId && (
+            <div className="flex justify-start">
+              <div className="bg-gray-800 px-4 py-3 rounded-2xl max-w-lg shadow-lg border border-gray-700">
+                <p className="text-sm opacity-70 mb-1">
+                  {data?.status === "completed"
+                    ? "AI Response"
+                    : `Status: ${data?.status || "queued..."}`}
+                </p>
+
+                {data?.status === "completed" && (
+                  <p className="whitespace-pre-line">
+                    {data.answer}
+                  </p>
+                )}
+
+                {data?.status === "processing" && (
+                  <p className="animate-pulse opacity-70">
+                    Analyzing website...
+                  </p>
+                )}
+
+                {data?.status === "queued" && (
+                  <p className="animate-pulse opacity-70">
+                    Added to processing queue...
+                  </p>
+                )}
+
+                {data?.status === "failed" && (
+                  <p className="text-red-400">
+                    {data.error}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
-        <Button appName="web" className={styles.secondary}>
-          Open alert
-        </Button>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com/templates?search=turborepo&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
+      </div>
+
+      {/* Input Area */}
+      <div className="border-t border-gray-700 p-4 bg-[#0f172a]">
+        <div className="max-w-3xl mx-auto flex flex-col gap-3">
+
+          <input
+            type="text"
+            placeholder="Enter website URL..."
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            className="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          Examples
-        </a>
-        <a
-          href="https://turborepo.dev?utm_source=create-turbo"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to turborepo.dev →
-        </a>
-      </footer>
+
+          <div className="flex gap-3">
+            <input
+              type="text"
+              placeholder="Ask a question about the website..."
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              className="flex-1 p-3 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+
+            <button
+              onClick={() => createTask.mutate()}
+              disabled={createTask.isPending || !url || !question}
+              className="bg-blue-600 hover:bg-blue-700 transition px-6 py-3 rounded-lg font-medium disabled:opacity-50"
+            >
+              {createTask.isPending ? "..." : "Send"}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

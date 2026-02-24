@@ -1,135 +1,94 @@
-# Turborepo starter
+# Internship Project SBL
 
-This Turborepo starter is maintained by the Turborepo core team.
+This repository is a Turborepo monorepo that implements a small AI-assisted web app:
 
-## Using this example
+- **apps/web**: a Next.js frontend (React) that provides the user interface.
+- **apps/server**: an Express-based backend that scrapes websites, enqueues tasks, processes them with Playwright and BullMQ, stores data in PostgreSQL, and queries Google Generative AI (Gemini) to answer user questions using only scraped content.
+- **packages/db**: shared Drizzle ORM schema and DB helpers used by the server.
 
-Run the following command:
+Core services used by the project: PostgreSQL (data), Redis (queues), and Google Generative AI (Gemini) for LLM responses.
 
-```sh
-npx create-turbo@latest
+**Primary purpose:** demonstrate an end-to-end pipeline for scraping web content, persisting it, running background processing, and answering questions using a generative AI constrained to the provided content.
+
+## Local setup
+
+Prerequisites:
+
+- Node.js >= 18
+- pnpm (used as package manager)
+- Docker and docker-compose (for local Postgres and Redis)
+- (Optional) Google Gemini API key
+
+1. Clone the repo and enter it:
+
+```bash
+git clone <repo-url>
+cd internship-project-sbl
 ```
 
-## What's inside?
+2. Create a `.env` file at the repository root with at least the following values (adjust as needed):
 
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+```env
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/ai_tasks
+GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+Notes:
 
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+- The project reads `DATABASE_URL` from the root `.env` (used by `packages/db/drizzle.config.ts`). `apps/server` will also read `GEMINI_API_KEY` from the environment (you may place it in `apps/server/.env` if you prefer).
 
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+3. Start local infra (Postgres + Redis):
+
+```bash
+docker-compose up -d
 ```
 
-### Develop
+4. Install workspace dependencies (from the repo root):
 
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+```bash
+pnpm install
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+5. Run the apps in development:
 
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
+- Run everything via Turborepo:
 
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
+```bash
+pnpm dev
 ```
 
-### Remote Caching
+- Or run apps individually from the workspace:
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
+```bash
+pnpm --filter server dev   # runs the Express backend (ts-node-dev)
+pnpm --filter web dev      # runs the Next.js frontend on :3000
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+6. Build for production:
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
+```bash
+pnpm build
+# start the web app
+pnpm --filter web start
 ```
 
-## Useful Links
+Environment variables used by the project (non-exhaustive):
 
-Learn more about the power of Turborepo:
+- `DATABASE_URL` — Postgres connection string
+- `GEMINI_API_KEY` — API key for Google Generative AI
 
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+Project layout (important folders):
+
+- `apps/server` — backend code (Express, BullMQ, Playwright, workers)
+- `apps/web` — Next.js frontend
+- `packages/db` — Drizzle schema and DB helpers
+
+If you want, I can also:
+
+- add a sample `.env.example` file
+- add a `Makefile` or npm script to simplify local setup
+- document any additional environment variables or DB migration steps
+
+---
+
+Updated README to describe project function and local setup.
